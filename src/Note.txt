@@ -1,0 +1,50 @@
+Needed commands:
+    clear <>
+    incr <>
+    decr <>
+
+Needed 'Function':
+    while <> not 0 do:
+    ...
+    ...
+    end;
+
+Regex Version of commands:
+    ^(\s*)clear (.+);
+    ^(\s*)incr (.+);
+    ^(\s*)decr (.+);
+
+    ^(\s*)while (.+) not 0 do;
+
+    ^(\s*)end;
+
+Regex Command Finder:
+    ^(\s*)(.+) .*
+
+//Dictionaries will be really useful to store 'variables'
+//clear is also used to create new variables
+
+System.out.println(element.replaceAll(<Regex Command Finder>, "$2"));
+This will split the command from the rest of a regex statement.
+
+System.out.println(element.replaceAll(<REGEX EXPERSSION>, "$2"));
+This will split the desired variable name from the rest of the expression.
+
+System.out.println(element.replaceAll(<REGEX EXPERSSION>, "$1"));
+This will split the starting white space from the rest of the expression. Will be useful for while loops
+
+Have to read text in from the file
+cycle through each line in the file
+decipher each command for a line
+create or edit any variables if required
+keep track of how indented while loops are (planning on finding the corresponding end; using how indented they are)
+Create an output of all variable to keep get record of execution
+
+
+File input = new File("Tester.txt");
+        Scanner fileReader = new Scanner(input);
+        while (fileReader.hasNextLine()){
+            String line = fileReader.nextLine();
+            System.out.println(line);
+        }
+        fileReader.close();
