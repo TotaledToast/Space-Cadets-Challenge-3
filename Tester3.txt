@@ -1,0 +1,16 @@
+clear X;
+X = X + 6;
+clear Y;
+Y = Y + 6;
+if X Is 6;
+   if Y Is 9;
+      clear Z;
+   else if Y Is 8;
+      clear C;
+   else;
+      clear X;
+   clear A;
+   if Y Is 6;
+      clear P;
+   clear C;
+clear B;

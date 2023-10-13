@@ -48,3 +48,48 @@ File input = new File("Tester.txt");
             System.out.println(line);
         }
         fileReader.close();
+
+New Functionality:
+    //<Comment>
+    New Operators:
+        <var> = <Var|Number> + <Var|Number>
+        <var> = <Var|Number> - <Var|Number>
+        <var> = <Var|Number> * <Var|Number>
+        <var> = <Var|Number> / <Var|Number>
+        <var> = <Var|Number> % <Var|Number>
+
+    if <Var> <Is|Is Not> <Var|Number>;
+    ...
+    ...
+    else If ......
+
+    Appropriate error messages when incorrect syntax is used
+
+    Running Subroutines
+
+Regex for new functionality:
+    (\s*)(//)(.*)
+
+    (\s*)(.*) = (.*) (+|-|*|/|%) (.*);
+
+    (\s*) if (.*) (Is|Is Not) (.*);
+    (\s*)else if (.*) (Is|Is Not) (.*);
+    (\s*)else(.*);
+
+
+
+When you reach an if statement it will check if the statement is valid
+if it isnt then the code will continue on until it finds a new line at the same whitespace level as the if statement
+if this line is an else statement then it will read check if there is another if after the else
+if there is another if it will treat the if like its whitespace ends at the else and act like a regular if
+if there is no if then the code will run like normal
+
+If the original if is valid then the code will run like normal until it reaches a code with the same whitespace level as the original if
+if this line starts with an else then the code will stop being run until the next line with the same whitespace level as the original if
+if this line is another else then this is repeated
+if not then the code will keep running as normal
+
+Need to store:
+    Whitespace amount
+    If code is currently being run
+    if the if statement is active

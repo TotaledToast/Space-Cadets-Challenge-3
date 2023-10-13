@@ -1,0 +1,10 @@
+clear X;
+incr X;
+incr X;
+incr X;
+X = X + 2;
+//Test Comment
+if X Is Not 0;
+   while X not 0 do;
+      decr X;
+   end;
