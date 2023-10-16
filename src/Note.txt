@@ -61,7 +61,8 @@ New Functionality:
     if <Var> <Is|Is Not> <Var|Number>;
     ...
     ...
-    else If ......
+    else if ......
+    end if
 
     Appropriate error messages when incorrect syntax is used
 
@@ -75,6 +76,7 @@ Regex for new functionality:
     (\s*) if (.*) (Is|Is Not) (.*);
     (\s*)else if (.*) (Is|Is Not) (.*);
     (\s*)else(.*);
+    (\s*)end if;
 
 
 

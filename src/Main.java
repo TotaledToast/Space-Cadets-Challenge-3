@@ -5,7 +5,7 @@ public class Main {
 
     List<String> programInput = new ArrayList<String>();
 
-    public static void main(String[] args) throws FileNotFoundException {
+    public static void main(String[] args) throws Exception {
         Scanner reader = new Scanner(System.in);
         System.out.println("Enter the program file path: ");
         String path = reader.nextLine();
@@ -34,12 +34,12 @@ class Program_Runner {
     Dictionary<String, Integer> variables = new Hashtable<>();
     //stores every variable and its value
 
-    public Program_Runner(String fileName) throws FileNotFoundException {
+    public Program_Runner(String fileName) throws Exception {
         fileReader(fileName); //reads the given code file
         Run_Code(); //runs the code using the programInput arraylist
     }
 
-    void Run_Code(){
+    void Run_Code() throws Exception {
 
 
         do {
@@ -57,7 +57,7 @@ class Program_Runner {
         // will keep running until the last line of code has been passed
     }
 
-    void Run_Line(){
+    void Run_Line() throws Exception {
         String command = get_Command(programInput.get(currentLine)); //seperated the command word from the line of code
         System.out.print("Line: " + currentLine + " Code: " + programInput.get(currentLine) + " | ");
         //outputs current line of code to the console to form a record of execution
@@ -66,10 +66,10 @@ class Program_Runner {
         //this forms 1 line of text in the console with the outputted line of code
     }
 
-    void check_Line(String Line){
+    void check_Line(String Line) throws Exception {
         int whitespace = 0;
-        if (Line.matches("(\\s*)else(.*);")){
-            whitespace = Line.replaceAll("(\\s*)else(.*);","$1").length();
+        if (Line.matches("(\\s*)else(.*);")) {
+            whitespace = Line.replaceAll("(\\s*)else(.*);", "$1").length();
             int index = find_corresponding_if(whitespace);
             if (ifs.get(index).code_Running) {
                 ifs.get(index).code_Running = false;
@@ -77,29 +77,35 @@ class Program_Runner {
             } else {
                 System.out.print("Line: " + currentLine + " Code: " + programInput.get(currentLine) + " | ");
                 Display_Variable();
-                if (!Line.replaceAll("(\\s*)else(.*);", "$2").isEmpty() && !ifs.get(index).has_Run){
+                if (!Line.replaceAll("(\\s*)else(.*);", "$2").isEmpty() && !ifs.get(index).has_Run) {
                     //has an if
-                    if (check_if_statement_valid(Line.replaceAll("(\\s*)else (.*);","$2") + ";")){
+                    if (check_if_statement_valid(Line.replaceAll("(\\s*)else (.*);", "$2") + ";")) {
                         ifs.get(index).code_Running = true;
 
                     }
-                } else if (!ifs.get(index).has_Run){
+                } else if (!ifs.get(index).has_Run) {
                     //no if
                     ifs.get(index).code_Running = true;
                 }
             }
 
-        } else if (!Line.matches("(\\s*)(//)(.*)")){
-            whitespace = Line.replaceAll("(\\s*)(.*);","$1").length();
+        }else if (Line.matches("(\\s*)end if;")) {
+            whitespace = Line.replaceAll("(\\s*)end if;","$1").length();
             int index = find_corresponding_if(whitespace);
             if (index != -1){
                 ifs.get(index).active = false;
-                Run_Line();
 
+            }
+        }else if (!Line.matches("(\\s*)(//)(.*)")){
+            whitespace = Line.replaceAll("(\\s*)(.*);","$1").length();
+            int index = find_corresponding_if(whitespace);
+            if (index != -1){
+                System.out.println("No detected \"end if;\" statement");
+                throw new Exception("Test");
+                
             }
         }
     }
-
     int find_corresponding_if(int whitespace){
         int count = 0;
         for (If_Storage element : ifs){
@@ -127,7 +133,7 @@ class Program_Runner {
         //displays all variables currently made
     }
 
-    void Run_Command(String command, String Line){
+    void Run_Command(String command, String Line) throws Exception {
         //runs a different function depending on what command was given
         switch (command) {
             case "clear":
@@ -285,7 +291,7 @@ class Program_Runner {
         }
     }
 
-    String get_Command(String Line){
+    String get_Command(String Line) throws Exception {
         //seperates the command word from a line of code
         // (//).*
         String command = "";
@@ -293,8 +299,10 @@ class Program_Runner {
             command = "comment";
         } else if (Line.matches("(\\s*)(.*) = (.*) (\\+|-|\\*|/|%) (.*);")) {
             command = Line.replaceAll("(\\s*)(.*) = (.*) (\\+|-|\\*|/|%) (.*);", "$4");
-        } else {
+        } else if (Line.matches("(\\s*)(clear|incr|decr|while|end|if|else)(.*);")){
             command = Line.replaceAll("(\\s*)(clear|incr|decr|while|end|if|else)(.*);", "$2");
+        } else {
+            throw new Exception("Incorrect command syntax: \"" + Line + "\"");
         }
         return command;
     }
