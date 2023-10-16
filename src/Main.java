@@ -31,6 +31,7 @@ class Program_Runner {
     List<While_Storage> whiles = new ArrayList<While_Storage>();
     //stores all encountered while, including inactive ones
     List<If_Storage> ifs = new ArrayList<>();
+    //stores all encountered if, including inactive ones
     Dictionary<String, Integer> variables = new Hashtable<>();
     //stores every variable and its value
 
@@ -43,13 +44,15 @@ class Program_Runner {
 
 
         do {
-            if (Check_ifs()){
+            if (Should_Code_Run()){
                 Run_Line();
             } else {
                 try {
                     check_Line(programInput.get(currentLine));
                 } catch (Exception e) {};
             }
+            //checks if any if statements are currently stopping code from being run. If they arent then the code runs as usual
+            //if the code is being stopped from running then the line of code is checked to see if any changes to the if statements have occured
 
             currentLine++;
             //increments to the next line of code
@@ -67,39 +70,33 @@ class Program_Runner {
     }
 
     void check_Line(String Line) throws Exception {
+        //checks the current line to see if any changes to an if statement should be run
         int whitespace = 0;
         if (Line.matches("(\\s*)else(.*);")) {
-            whitespace = Line.replaceAll("(\\s*)else(.*);", "$1").length();
-            int index = find_corresponding_if(whitespace);
-            if (ifs.get(index).code_Running) {
-                ifs.get(index).code_Running = false;
-                ifs.get(index).has_Run = true;
-            } else {
-                System.out.print("Line: " + currentLine + " Code: " + programInput.get(currentLine) + " | ");
-                Display_Variable();
-                if (!Line.replaceAll("(\\s*)else(.*);", "$2").isEmpty() && !ifs.get(index).has_Run) {
-                    //has an if
-                    if (check_if_statement_valid(Line.replaceAll("(\\s*)else (.*);", "$2") + ";")) {
-                        ifs.get(index).code_Running = true;
-
-                    }
-                } else if (!ifs.get(index).has_Run) {
-                    //no if
-                    ifs.get(index).code_Running = true;
-                }
-            }
+            //checks if the current line is an else statement
+            else_command(Line);
 
         }else if (Line.matches("(\\s*)end if;")) {
+            //if the line is not an else this checks if its an end if
             whitespace = Line.replaceAll("(\\s*)end if;","$1").length();
             int index = find_corresponding_if(whitespace);
+            //attempts to find a corresponding if statement to the end if
+            //found by comparing whitepsace values of active if statements
             if (index != -1){
+                //if there is a corresponding if statement then the if statement is deactived as the end of it has been reached
                 ifs.get(index).active = false;
 
+            } else {
+                //if there isnt a correspoding if statement then an error is thrown
+                throw new Exception("No corresponding if statement found! | " + Line);
             }
         }else if (!Line.matches("(\\s*)(//)(.*)")){
+            //if it isnt an else or end if statment then it checkd if it isnt a comment (a regular line of code)
             whitespace = Line.replaceAll("(\\s*)(.*);","$1").length();
             int index = find_corresponding_if(whitespace);
+            //if it is a regular line of code it checks if its on the same indentation as any active if statement
             if (index != -1){
+                //if it is on the same indentation as an active if statement then an error is thrown as there should be an end if statement before this line
                 System.out.println("No detected \"end if;\" statement");
                 throw new Exception("Test");
                 
@@ -107,17 +104,23 @@ class Program_Runner {
         }
     }
     int find_corresponding_if(int whitespace){
+        //finds an active if statement with the same whitespace indentation given to it
         int count = 0;
         for (If_Storage element : ifs){
+            //loops throw each elements in the ifs arraylist
             if (element.whitespace == whitespace && element.active){
                 return count;
             }
             count ++;
+            //keeps track of the current arraylist index corresponding to the current element in the if statement
         }
         return -1;
+        //returns -1 if no corresponding if statement is found
+        //returns the index of the if statement if one is found
     }
 
-    boolean Check_ifs(){
+    boolean Should_Code_Run(){
+        //checks if any active if statements are currently stopping code from running
         boolean code_Running = true;
         for (If_Storage element : ifs){
             if (element.active && !element.code_Running){
@@ -126,6 +129,7 @@ class Program_Runner {
             }
         }
         return code_Running;
+        //returns if the code should run or not
     }
 
     void Display_Variable(){
@@ -163,7 +167,7 @@ class Program_Runner {
                 if_command(Line);
                 break;
             case "else":
-                check_Line(Line);
+                else_command(Line);
             case "comment":
                 break;
         }
@@ -177,40 +181,56 @@ class Program_Runner {
     }
 
     void else_command(String Line){
-        //            whitespace = Line.replaceAll("(\\s*)else(.*);","$1").length();
-        //            int index = find_corresponding_if(whitespace);
-        //            if (ifs.get(index).code_Running) {
-        //                ifs.get(index).code_Running = false;
-        //                ifs.get(index).has_Run = true;
-        //            } else {
-        //                if (!Line.replaceAll("(\\s*)else(.*);", "$2").isEmpty() && !ifs.get(index).has_Run){
-        //                    //has an if
-        //                    if (check_if_statement_valid(Line.replaceAll("(\\s*)else (.*);","$2") + ";")){
-        //                        ifs.get(index).code_Running = true;
-        //
-        //                    }
-        //                } else if (!ifs.get(index).has_Run){
-        //                    //no if
-        //                    ifs.get(index).code_Running = true;
-        //                }
-        //            }
+        //runs when an else command is found
+        int whitespace = Line.replaceAll("(\\s*)else(.*);", "$1").length();
+        int index = find_corresponding_if(whitespace);
+        //finds the if statement corresponding to the whitespace indentation of the else statement
+        if (ifs.get(index).code_Running) {
+            //if the corresponsing if statement is allowing code to run then the code will stop being allowed to run
+            // and the if statement will have been run
+            ifs.get(index).code_Running = false;
+            ifs.get(index).has_Run = true;
+        } else {
+            //if the code isnt being allowed to run then this code is run
+            System.out.print("Line: " + currentLine + " Code: " + programInput.get(currentLine) + " | ");
+            Display_Variable();
+            //prints the current line are variable to console as the else statement is being run (checked)
+            if (!Line.replaceAll("(\\s*)else(.*);", "$2").isEmpty() && !ifs.get(index).has_Run) {
+                //has an if AND is hasnt been run yet
+                if (check_if_statement_valid(Line.replaceAll("(\\s*)else (.*);", "$2") + ";")) {
+                    //checks if the if statement is valid, and if it is then the code is set to being allowed to run
+                    ifs.get(index).code_Running = true;
+
+                }
+            } else if (!ifs.get(index).has_Run) {
+                //no if
+                //if its just an else statement then no check needs to be made and the code can be allowed to run
+                ifs.get(index).code_Running = true;
+            }
+        }
 
 
     }
 
     boolean check_if_statement_valid(String Line){
+        //checks if the condition of an if statement
         boolean is = false;
         int comparing_Value = 0;
         int variable_Value = variables.get(Line.replaceAll("(\\s*)if (.*) (Is Not|Is) (.*);","$2"));
+        //gets the value of the variable that will be used
         if (variables.get(Line.replaceAll("(\\s*)if (.*) (Is Not|Is) (.*);", "$4")) != null){
+            //if the value that the main variable is being comapred to is a variable
             comparing_Value = variables.get(Line.replaceAll("(\\s*)if (.*) (Is Not|Is) (.*);","$4"));
         } else {
+            //if the value that the main variable is being comapred to is a number
             comparing_Value = Integer.parseInt(Line.replaceAll("(\\s*)if (.*) (Is Not|Is) (.*);","$4"));
         }
         if (Line.replaceAll("(\\s*)if (.*) (Is Not|Is) (.*);", "$3").equals("Is")) {
+            //if the statement is an 'Is' statement then is is set to true
             is = true;
         }
         return Objects.equals(comparing_Value, variable_Value) == is;
+        //returns if the condition is met or not
     }
 
     void operator_Commands(String Line, String operator){
@@ -218,18 +238,24 @@ class Program_Runner {
         int first_Value = 0;
         int second_Value = 0;
         changing_Value = Line.replaceAll("(\\s*)(.*) = (.*) (\\+|-|\\*|/|%) (.*);","$2");
+        //gets the name of the variable thats being affected
         if (variables.get(Line.replaceAll("(\\s*)(.*) = (.*) (\\+|-|\\*|/|%) (.*);","$3")) != null) {
+            //if the first value is a variable
             first_Value = variables.get(Line.replaceAll("(\\s*)(.*) = (.*) (\\+|-|\\*|/|%) (.*);","$3"));
         } else {
+            //if the first value is a number
             first_Value = Integer.parseInt(Line.replaceAll("(\\s*)(.*) = (.*) (\\+|-|\\*|/|%) (.*);","$3"));
         }
         if (variables.get(Line.replaceAll("(\\s*)(.*) = (.*) (\\+|-|\\*|/|%) (.*);","$5")) != null) {
+            //if the second value is a variable
             second_Value = variables.get(Line.replaceAll("(\\s*)(.*) = (.*) (\\+|-|\\*|/|%) (.*);","$5"));
         } else {
+            //is the second value is a number
             second_Value = Integer.parseInt(Line.replaceAll("(\\s*)(.*) = (.*) (\\+|-|\\*|/|%) (.*);","$5"));
         }
 
         switch  (operator){
+            //depending of the operator given it affects the value of the variable ina different way
             case "+":
                 variables.put(changing_Value, first_Value + second_Value);
                 break;
