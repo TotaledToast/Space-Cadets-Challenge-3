@@ -10,7 +10,6 @@ public class Main {
         //gets the path to the txt file containing the code
         reader.close();
         Program_Container program = new Program_Container(path);
-        //Program_Runner program = new Program_Runner(path);
         //starts the interpreter
 
 
@@ -22,6 +21,7 @@ public class Main {
 }
 
 class Program_Container {
+    //breaks down the inputted text file so individual functions can be run
     List<String> programInput = new ArrayList<>();
 
     List<Function_Store> functions = new ArrayList<>();
@@ -44,11 +44,13 @@ class Program_Container {
     }
 
     void Split_Code_Into_Functions(){
+        //takes the fully read code file and splits it into each subroutine
         String current_Function = "";
         for (String Line : programInput){
 
 
             if (Line.contains("):")){
+                //adds a new function to the function list
                 current_Function = Line.replaceAll("^(.*)\\((.*)\\):", "$1");
                 String all_Variables = Line.replaceAll("^(.*)\\((.*)\\):", "$2");
                 List<String> split_Variables = Arrays.stream(all_Variables.split(",")).toList();
@@ -60,6 +62,7 @@ class Program_Container {
                 }
                 functions.add(temp);
             } else if(!current_Function.isEmpty()){
+                //adds a new line to a function
                 functions.get(Find_Function(current_Function)).add_Line_To_Code(Line);
             }
         }
@@ -119,8 +122,7 @@ class Program_Runner {
     }
 
     void Run_Code() throws Exception {
-
-
+        //runs the code from program input a line at a time
         do {
             if (Should_Code_Run()){
                 Run_Line();
@@ -139,6 +141,7 @@ class Program_Runner {
     }
 
     void Run_Line() throws Exception {
+        //runs a specific line of code
         String command = get_Command(programInput.get(currentLine)); //seperated the command word from the line of code
         Run_Command(command, programInput.get(currentLine)); //runs the line of code
         System.out.print("Line: " + currentLine + " Code: " + programInput.get(currentLine) + " | ");
@@ -259,14 +262,17 @@ class Program_Runner {
     }
 
     void function_command(String Line) throws Exception {
+        //takes a function and runs it using the given inputs
         String functionName = Line.replaceAll("^(\\s*)(.*)\\((.*)\\)", "$2");
         int index = Find_Function(functionName);
         Function_Store func = functions.get(index);
         if (is_function_valid(Line.replaceAll("^(\\s*)(.*)\\((.*)\\)", "$3"), func)){
+            //checks if the function has valid inputs or not
             Dictionary<String, Integer> inputVars = get_function_variables(Line.replaceAll("^(\\s*)(.*)\\((.*)\\)", "$3"), func);
             System.out.println("Function \"" + functionName + "\" is Starting:");
             Program_Runner new_func;
             if (Line.replaceAll("^(\\s*)(.*)\\((.*)\\)", "$3").isEmpty()){
+                //finds if the function has inputs or not
                 new_func = new Program_Runner(func.code_Store, functions);
             } else {
                 new_func = new Program_Runner(func.code_Store, functions, inputVars);
@@ -279,14 +285,17 @@ class Program_Runner {
     }
 
     void return_command(String Line){
+        //sets the return value
         return_Value = variables.get(Line.replaceAll("(\\s*)return (.*);", "$2"));
     }
 
     int get_return_value(){
+        //gets the return value
         return return_Value;
     }
 
     Dictionary<String, Integer> get_function_variables(String input, Function_Store function){
+        //returns the values of the input variables for a function
         List<String> inputSplit = List.of(input.split(","));
         Dictionary<String, Integer> outputVariables = new Hashtable<>();
         int count = 0;
@@ -298,13 +307,13 @@ class Program_Runner {
     }
 
     boolean is_function_valid(String input, Function_Store function){
+        //checks if a written function has the same number of input variables as required
         List<String> inputSplit = List.of(input.split(","));
         return inputSplit.size() == function.input_Variables.size();
     }
 
     void if_command(String Line){
-        //(\s*)if (.*) (Is|Is Not) (.*);
-
+        //adds an if command to the list of if statements
         ifs.add(new If_Storage(Line.replaceAll("(\\s*)if (.*) (Is Not|Is) (.*);", "$1").length(), check_if_statement_valid(Line)));
 
     }
@@ -372,6 +381,7 @@ class Program_Runner {
             //if the first value is a variable
             first_Value = variables.get(Line.replaceAll("(\\s*)(.*) = (.*) (\\+|-|\\*|/|%) (.*);","$3"));
         } else if(Line.replaceAll("(\\s*)(.*) = (.*) (\\+|-|\\*|/|%) (.*);","$3").matches("(.*)\\((.*)\\)")) {
+            //if the value is a function
             function_command(Line.replaceAll("(\\s*)(.*) = (.*) (\\+|-|\\*|/|%) (.*);","$3"));
             first_Value = current_Function.get_return_value();
         }else {
@@ -382,6 +392,7 @@ class Program_Runner {
             //if the second value is a variable
             second_Value = variables.get(Line.replaceAll("(\\s*)(.*) = (.*) (\\+|-|\\*|/|%) (.*);","$5"));
         } else if(Line.replaceAll("(\\s*)(.*) = (.*) (\\+|-|\\*|/|%) (.*);","$5").matches("(.*)\\((.*)\\)")) {
+            //if the value is a function
             function_command(Line.replaceAll("(\\s*)(.*) = (.*) (\\+|-|\\*|/|%) (.*);","$5"));
             second_Value = current_Function.get_return_value();
         }else {

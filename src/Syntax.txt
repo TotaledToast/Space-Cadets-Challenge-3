@@ -1,0 +1,29 @@
+clear x;
+    creates a new variable x and/or sets it to 0
+
+incr x;
+    increases the value of x by 1
+
+decr x;
+    decreases the value of x by 1
+
+x = a <+|-|*|/|%> b;
+    sets x to value of a <operator> b
+    a and b can be either a number, variable, or a function call
+
+func(a,b)
+    calls a function with parameter a and b
+
+func(a,b):
+    starts a function called func with parameters a and b
+
+while x not <num> do;
+    while loop that runs while x is not equal to the number defined in <num>
+
+if X Is|Not <num>;
+else if ....;
+else;
+end if;
+    an if statement that runs when x is/is not equal to the number defined in <num>
+    has else if and else statements
+    exited with an end if statement
