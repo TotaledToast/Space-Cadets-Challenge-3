@@ -3,15 +3,14 @@ import java.io.*;
 
 public class Main {
 
-    List<String> programInput = new ArrayList<String>();
-
     public static void main(String[] args) throws Exception {
         Scanner reader = new Scanner(System.in);
         System.out.println("Enter the program file path: ");
         String path = reader.nextLine();
         //gets the path to the txt file containing the code
         reader.close();
-        Program_Runner program = new Program_Runner(path);
+        Program_Container program = new Program_Container(path);
+        //Program_Runner program = new Program_Runner(path);
         //starts the interpreter
 
 
@@ -22,9 +21,68 @@ public class Main {
 
 }
 
+class Program_Container {
+    List<String> programInput = new ArrayList<>();
+
+    List<Function_Store> functions = new ArrayList<>();
+
+    public Program_Container(String fileName) throws Exception {
+        fileReader(fileName); //reads the given code file
+        Split_Code_Into_Functions();
+        Program_Runner func = new Program_Runner(functions.get(Find_Function("Main")).code_Store, functions);
+    }
+
+    void fileReader(String fileName) throws FileNotFoundException {
+        File input = new File(fileName); //opens the given file
+        Scanner fileReader = new Scanner(input);
+        while (fileReader.hasNextLine()){
+            String line = fileReader.nextLine();
+            programInput.add(line);
+            //reads through every line in the file and adds it to an arraylist for easier reading
+        }
+        fileReader.close();
+    }
+
+    void Split_Code_Into_Functions(){
+        String current_Function = "";
+        for (String Line : programInput){
+
+
+            if (Line.contains("):")){
+                current_Function = Line.replaceAll("^(.*)\\((.*)\\):", "$1");
+                String all_Variables = Line.replaceAll("^(.*)\\((.*)\\):", "$2");
+                List<String> split_Variables = Arrays.stream(all_Variables.split(",")).toList();
+                Function_Store temp;
+                if (Objects.equals(split_Variables.get(0), "")){
+                    temp = new Function_Store(current_Function, new ArrayList<>());
+                } else {
+                    temp = new Function_Store(current_Function, split_Variables);
+                }
+                functions.add(temp);
+            } else if(!current_Function.isEmpty()){
+                functions.get(Find_Function(current_Function)).add_Line_To_Code(Line);
+            }
+        }
+    }
+
+    int Find_Function(String current_Function){
+        int index = 0;
+        for (Function_Store function : functions){
+            if (Objects.equals(function.identifier, current_Function)){
+                return index;
+            }
+            index++;
+        }
+        return -1;
+    }
+}
+
 class Program_Runner {
     List<String> programInput = new ArrayList<String>();
     //stores the read program input
+    List<Function_Store> functions = new ArrayList<>();
+
+    Program_Runner current_Function;
     int currentLine = 0;
     //Stores the currently running line of code
 
@@ -34,10 +92,30 @@ class Program_Runner {
     //stores all encountered if, including inactive ones
     Dictionary<String, Integer> variables = new Hashtable<>();
     //stores every variable and its value
+    Integer return_Value;
 
-    public Program_Runner(String fileName) throws Exception {
-        fileReader(fileName); //reads the given code file
+    public Program_Runner(List<String> code, List<Function_Store> functions) throws Exception {
+        this.programInput = code;
+        this.functions = functions;
         Run_Code(); //runs the code using the programInput arraylist
+    }
+
+    public Program_Runner(List<String> code, List<Function_Store> functions, Dictionary<String,Integer> inputVariables) throws Exception {
+        this.programInput = code;
+        this.functions = functions;
+        this.variables = inputVariables;
+        Run_Code(); //runs the code using the programInput arraylist
+    }
+
+    int Find_Function(String current_Function){
+        int index = 0;
+        for (Function_Store function : functions){
+            if (Objects.equals(function.identifier, current_Function)){
+                return index;
+            }
+            index++;
+        }
+        return -1;
     }
 
     void Run_Code() throws Exception {
@@ -62,11 +140,9 @@ class Program_Runner {
 
     void Run_Line() throws Exception {
         String command = get_Command(programInput.get(currentLine)); //seperated the command word from the line of code
-        System.out.print("Line: " + currentLine + " Code: " + programInput.get(currentLine) + " | ");
-        //outputs current line of code to the console to form a record of execution
         Run_Command(command, programInput.get(currentLine)); //runs the line of code
+        System.out.print("Line: " + currentLine + " Code: " + programInput.get(currentLine) + " | ");
         Display_Variable(); //outputs current variables to the console to keep a record of execution
-        //this forms 1 line of text in the console with the outputted line of code
     }
 
     void check_Line(String Line) throws Exception {
@@ -168,9 +244,62 @@ class Program_Runner {
                 break;
             case "else":
                 else_command(Line);
-            case "comment":
                 break;
+            case "function":
+                function_command(Line);
+                break;
+            case "return":
+                return_command(Line);
+                break;
+            case "none":
+            case "comment": {
+                break;
+            }
         }
+    }
+
+    void function_command(String Line) throws Exception {
+        String functionName = Line.replaceAll("^(\\s*)(.*)\\((.*)\\)", "$2");
+        int index = Find_Function(functionName);
+        Function_Store func = functions.get(index);
+        if (is_function_valid(Line.replaceAll("^(\\s*)(.*)\\((.*)\\)", "$3"), func)){
+            Dictionary<String, Integer> inputVars = get_function_variables(Line.replaceAll("^(\\s*)(.*)\\((.*)\\)", "$3"), func);
+            System.out.println("Function \"" + functionName + "\" is Starting:");
+            Program_Runner new_func;
+            if (Line.replaceAll("^(\\s*)(.*)\\((.*)\\)", "$3").isEmpty()){
+                new_func = new Program_Runner(func.code_Store, functions);
+            } else {
+                new_func = new Program_Runner(func.code_Store, functions, inputVars);
+            }
+            current_Function = new_func;
+            System.out.println("Function \"" + functionName + "\" hsa ended:");
+        } else {
+            throw new Exception("Incorrect Input Parameters!");
+        }
+    }
+
+    void return_command(String Line){
+        return_Value = variables.get(Line.replaceAll("(\\s*)return (.*);", "$2"));
+    }
+
+    int get_return_value(){
+        return return_Value;
+    }
+
+    Dictionary<String, Integer> get_function_variables(String input, Function_Store function){
+        List<String> inputSplit = List.of(input.split(","));
+        Dictionary<String, Integer> outputVariables = new Hashtable<>();
+        int count = 0;
+        for (String var: inputSplit){
+            outputVariables.put(function.input_Variables.get(count), variables.get(var));
+            count++;
+        }
+        return outputVariables;
+    }
+
+    boolean is_function_valid(String input, Function_Store function){
+        List<String> inputSplit = List.of(input.split(","));
+        return inputSplit.size() == function.input_Variables.size();
     }
 
     void if_command(String Line){
@@ -233,7 +362,7 @@ class Program_Runner {
         //returns if the condition is met or not
     }
 
-    void operator_Commands(String Line, String operator){
+    void operator_Commands(String Line, String operator) throws Exception {
         String changing_Value= "";
         int first_Value = 0;
         int second_Value = 0;
@@ -242,20 +371,26 @@ class Program_Runner {
         if (variables.get(Line.replaceAll("(\\s*)(.*) = (.*) (\\+|-|\\*|/|%) (.*);","$3")) != null) {
             //if the first value is a variable
             first_Value = variables.get(Line.replaceAll("(\\s*)(.*) = (.*) (\\+|-|\\*|/|%) (.*);","$3"));
-        } else {
+        } else if(Line.replaceAll("(\\s*)(.*) = (.*) (\\+|-|\\*|/|%) (.*);","$3").matches("(.*)\\((.*)\\)")) {
+            function_command(Line.replaceAll("(\\s*)(.*) = (.*) (\\+|-|\\*|/|%) (.*);","$3"));
+            first_Value = current_Function.get_return_value();
+        }else {
             //if the first value is a number
             first_Value = Integer.parseInt(Line.replaceAll("(\\s*)(.*) = (.*) (\\+|-|\\*|/|%) (.*);","$3"));
         }
         if (variables.get(Line.replaceAll("(\\s*)(.*) = (.*) (\\+|-|\\*|/|%) (.*);","$5")) != null) {
             //if the second value is a variable
             second_Value = variables.get(Line.replaceAll("(\\s*)(.*) = (.*) (\\+|-|\\*|/|%) (.*);","$5"));
-        } else {
+        } else if(Line.replaceAll("(\\s*)(.*) = (.*) (\\+|-|\\*|/|%) (.*);","$5").matches("(.*)\\((.*)\\)")) {
+            function_command(Line.replaceAll("(\\s*)(.*) = (.*) (\\+|-|\\*|/|%) (.*);","$5"));
+            second_Value = current_Function.get_return_value();
+        }else {
             //is the second value is a number
             second_Value = Integer.parseInt(Line.replaceAll("(\\s*)(.*) = (.*) (\\+|-|\\*|/|%) (.*);","$5"));
         }
 
         switch  (operator){
-            //depending of the operator given it affects the value of the variable ina different way
+            //depending on the operator given it affects the value of the variable ina different way
             case "+":
                 variables.put(changing_Value, first_Value + second_Value);
                 break;
@@ -319,29 +454,21 @@ class Program_Runner {
 
     String get_Command(String Line) throws Exception {
         //seperates the command word from a line of code
-        // (//).*
         String command = "";
-        if (Line.matches("(\\s*)(//)(.*)")){
+        if (Line.isEmpty()) {
+            command = "none";
+        }else if (Line.matches("(\\s*)(//)(.*)")){
             command = "comment";
         } else if (Line.matches("(\\s*)(.*) = (.*) (\\+|-|\\*|/|%) (.*);")) {
             command = Line.replaceAll("(\\s*)(.*) = (.*) (\\+|-|\\*|/|%) (.*);", "$4");
-        } else if (Line.matches("(\\s*)(clear|incr|decr|while|end|if|else)(.*);")){
-            command = Line.replaceAll("(\\s*)(clear|incr|decr|while|end|if|else)(.*);", "$2");
+        } else if (Line.matches("(\\s*)(clear|incr|decr|while|end|if|else|return)(.*);")) {
+            command = Line.replaceAll("(\\s*)(clear|incr|decr|while|end|if|else|return)(.*);", "$2");
+        }else if(Line.matches("^(.*)\\((.*)\\);")) {
+            command = "function";
         } else {
             throw new Exception("Incorrect command syntax: \"" + Line + "\"");
         }
         return command;
-    }
-
-    void fileReader(String fileName) throws FileNotFoundException {
-        File input = new File(fileName); //opens the given file
-        Scanner fileReader = new Scanner(input);
-        while (fileReader.hasNextLine()){
-            String line = fileReader.nextLine();
-            programInput.add(line);
-            //reads through every line in the file and adds it to an arraylist for easier reading
-        }
-        fileReader.close();
     }
 }
 
@@ -371,6 +498,22 @@ class If_Storage{
         whitespace= white;
         code_Running = running;
         has_Run = running;
+    }
+
+}
+
+class Function_Store{
+    String identifier;
+    List<String> code_Store = new ArrayList<>();
+    List<String> input_Variables = new ArrayList<>();
+
+    public Function_Store(String identifier, List<String> input_Variables){
+        this.identifier = identifier;
+        this.input_Variables = input_Variables;
+    }
+
+    public void add_Line_To_Code(String Line){
+        this.code_Store.add(Line);
     }
 
 }

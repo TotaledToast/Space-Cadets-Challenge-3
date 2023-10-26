@@ -1,0 +1,14 @@
+Main():
+ clear X;
+ clear Y;
+ clear a;
+ clear b;
+ a = a + 7;
+ b = b + 8;
+ X = other(a,b) + other(a,b);
+ clear C;
+
+other(a,b):
+ clear c;
+ c = a * b;
+ return c;

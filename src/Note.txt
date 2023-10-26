@@ -95,3 +95,13 @@ Need to store:
     Whitespace amount
     If code is currently being run
     if the if statement is active
+
+
+A function can be used in place of a variable or number in any other command
+Functions:
+Main():
+
+<anything else>(a,b,c,d):
+
+
+^((a-Z)*)((.*));
